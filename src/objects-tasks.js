@@ -367,32 +367,111 @@ function group(arr, key, val) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selectorName: null,
+  selectorId: null,
+  selectorDescription: null,
+  selectorClass: null,
+  selectorAttribute: null,
+  queueAttribute: null,
+  selectorPseudoClass: null,
+  selectorPseudoElement: null,
+
+  error(type) {
+    if (type === 1) {
+      throw new Error(
+        `Element, id and pseudo-element should not occur more then one time inside the selector!`
+      );
+    } else {
+      throw new Error(
+        `Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element!`
+      );
+    }
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    if (
+      this.selectorId ||
+      this.selectorClass ||
+      this.selectorAttribute ||
+      this.selectorPseudoClass ||
+      this.selectorPseudoElement
+    )
+      this.error(2);
+    if (this.selectorName) this.error(1);
+    const selector = this.createSelector(value, 0);
+    selector.selectorName = value;
+    return selector;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    if (
+      this.selectorClass ||
+      this.selectorAttribute ||
+      this.selectorPseudoClass ||
+      this.selectorPseudoElement
+    )
+      this.error(2);
+    if (this.selectorId) this.error(1);
+    const id = `#${value}`;
+    const selector = this.createSelector(id, 1);
+    selector.selectorId = id;
+    return selector;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    if (
+      this.selectorAttribute ||
+      this.selectorPseudoClass ||
+      this.selectorPseudoElement
+    )
+      this.error(2);
+    const classSel = `.${value}`;
+    const selector = this.createSelector(classSel, 2);
+    selector.selectorClass = classSel;
+    return selector;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    if (this.selectorPseudoClass || this.selectorPseudoElement) this.error(2);
+    const attribute = `[${value}]`;
+    const selector = this.createSelector(attribute, 3);
+    selector.selectorAttribute = attribute;
+    return selector;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    if (this.selectorPseudoElement) this.error(2);
+    const pseudoClass = `:${value}`;
+    const selector = this.createSelector(pseudoClass, 4);
+    selector.selectorPseudoClass = pseudoClass;
+    return selector;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    if (this.selectorPseudoElement) this.error(1);
+    const pseudoElement = `::${value}`;
+    const selector = this.createSelector(pseudoElement, 5);
+    selector.selectorPseudoElement = pseudoElement;
+    return selector;
+  },
+
+  stringify(value = this.selectorDescription) {
+    this.selectorDescription = null;
+    return value;
+  },
+
+  combine(selector1, combinator, selector2) {
+    this.selectorDescription = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    return this;
+  },
+
+  createSelector(value, queue) {
+    const selector = Object.create(this);
+    selector.selectorDescription = selector.selectorDescription
+      ? (selector.selectorDescription += value)
+      : (selector.selectorDescription = value);
+    selector.queueAttribute = queue;
+    return selector;
   },
 };
 
